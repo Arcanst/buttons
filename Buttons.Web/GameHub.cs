@@ -27,6 +27,14 @@ public class GameHub : Hub
         return Result.Ok();
     }
 
+    public async Task<Result> ResetGame()
+    {
+        _gameSession.ClearGame();
+        await Clients.All.SendAsync("gameReset");
+
+        return Result.Ok();
+    }
+
     public override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();

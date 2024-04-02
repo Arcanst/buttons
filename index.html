@@ -12,16 +12,23 @@
         <div id="playerBox" hidden>
             <input id="playerNameInput" type="text" placeholder="Player name" onkeyup="success()" />
             <button id="joinGameButton" disabled onclick="connect()">Connect</button>
+            <button id="clickButton" hidden onclick="onClickButtonClick()">Click me!</button>
         </div>
         <div id="adminBox" hidden>
+            <button id="resetGameButton" onclick="onResetGameButtonClick()">Reset game</button>
             <ul id="playersList">
             </ul>
         </div>
         <script>
+            let userEntries = [];
+
+            let connection;
+
             function connect() {
                 const name = document.getElementById('playerNameInput').value;
                 const role = document.getElementById('playerRoleInput').value;
-                const connection = new signalR
+
+                connection = new signalR
                     .HubConnectionBuilder()
                     .withUrl("http://localhost:5091/game?name=" + name + "&role=" + role)
                     .configureLogging(signalR.LogLevel.Information)
@@ -31,6 +38,10 @@
                     try {
                         await connection.start();
                         console.log("SignalR Connected.");
+
+                        const clickButton = document.getElementById('clickButton');
+
+                        clickButton.hidden = false;
                     } catch (err) {
                         console.log(err);
                         setTimeout(start, 5000);
@@ -44,6 +55,10 @@
                         li.id = user;
                         li.textContent = `${user}`;
                         document.getElementById("playersList").appendChild(li);
+                        userEntries.push({
+                            user: user,
+                            timestamp: undefined,
+                        });
                     }
                 })
 
@@ -53,6 +68,51 @@
                     if(li) {
                         li.parentNode.removeChild(li);
                     }
+
+                    const foundUserEntries = userEntries.filter(e => e.user === user);
+
+                    if(foundUserEntries.length) {
+                        userEntries.splice(userEntries.indexOf(foundUserEntries[0]), 1);
+                    }
+                })
+
+                connection.on('clickRegistered', (user, timestamp) => {
+                    const li = document.getElementById(user);
+
+                    if(li) {
+                        li.textContent = `${user} - ${timestamp}`;
+                    }
+
+                    const foundUserEntries = userEntries.filter(e => e.user === user);
+
+                    if(foundUserEntries.length) {
+                        const userEntry = foundUserEntries[0];
+
+                        if(!foundUserEntries.timestamp) {
+                            foundUserEntries.timestamp = timestamp;
+                        }
+                    } else {
+                        userEntries.push({
+                            user,
+                            timestamp,
+                        });
+                    }
+
+                    const ul = document.getElementById('playersList');
+
+                    ul.innerHtml = userEntries
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .map((e, index) =>`<li ${index == 0 ? 'style="color:green;"' : ''}>${user} - ${timestamp}</li>`);
+                })
+
+                connection.on('gameReset', () => {
+                    const ul = document.getElementById('playersList');
+                    const clickButton = document.getElementById('clickButton');
+
+                    ul.innerHTML = '';
+
+                    userEntries = [];
+                    clickButton.disabled = false;
                 })
 
                 connection.onclose(async () => {
@@ -62,8 +122,7 @@
                 // Start the connection.
                 start();
             }
-        </script>
-        <script>
+
             function success() {
                 if(document.getElementById('playerNameInput').value==='') { 
                     document.getElementById('joinGameButton').disabled = true; 
@@ -87,6 +146,21 @@
                 document.getElementById('playerBox').hidden = true;
 
                 connect();
+            }
+
+            function onClickButtonClick() {
+                const clickButton = document.getElementById('clickButton');
+                const playerName = document.getElementById('playerNameInput').value;
+
+                clickButton.disabled = true;
+
+                connection.invoke('registerClick');
+            }
+
+            function onResetGameButtonClick() {
+                const resetGameButton = document.getElementById('resetGameButton');
+
+                connection.invoke('resetGame');
             }
         </script>
     </body>
