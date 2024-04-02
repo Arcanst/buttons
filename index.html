@@ -1,0 +1,93 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    </head>
+    <body>
+        Welcome to Buttons!
+        <input id="playerRoleInput" type="text" hidden>
+        <div id="roleBox">
+            <button id="playerRoleButton" onclick="onPLayerRoleButtonClick()">Player</button>
+            <button id="adminRoleButton" onclick="onAdminRoleButtonClick()">Admin</button>
+        </div>
+        <div id="playerBox" hidden>
+            <input id="playerNameInput" type="text" placeholder="Player name" onkeyup="success()" />
+            <button id="joinGameButton" disabled onclick="connect()">Connect</button>
+        </div>
+        <div id="adminBox" hidden>
+            <ul id="playersList">
+            </ul>
+        </div>
+        <script>
+            function connect() {
+                const name = document.getElementById('playerNameInput').value;
+                const role = document.getElementById('playerRoleInput').value;
+                const connection = new signalR
+                    .HubConnectionBuilder()
+                    .withUrl("http://localhost:5091/game?name=" + name + "&role=" + role)
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                async function start() {
+                    try {
+                        await connection.start();
+                        console.log("SignalR Connected.");
+                    } catch (err) {
+                        console.log(err);
+                        setTimeout(start, 5000);
+                    }
+                };
+
+                connection.on('playerJoined', (user) => {
+                    if(!document.getElementById(user)) {
+                        const li = document.createElement("li");
+
+                        li.id = user;
+                        li.textContent = `${user}`;
+                        document.getElementById("playersList").appendChild(li);
+                    }
+                })
+
+                connection.on('playerLeft', (user) => {
+                    const li = document.getElementById(user);
+
+                    if(li) {
+                        li.parentNode.removeChild(li);
+                    }
+                })
+
+                connection.onclose(async () => {
+                    await start();
+                });
+
+                // Start the connection.
+                start();
+            }
+        </script>
+        <script>
+            function success() {
+                if(document.getElementById('playerNameInput').value==='') { 
+                    document.getElementById('joinGameButton').disabled = true; 
+                } else { 
+                    document.getElementById('joinGameButton').disabled = false;
+                }
+            }
+
+            function onPLayerRoleButtonClick() {
+                document.getElementById('playerRoleInput').value = 'player';
+                document.getElementById('roleBox').hidden = true;
+                document.getElementById('playerBox').hidden = false;
+                document.getElementById('adminBox').hidden = true;
+            }
+
+            function onAdminRoleButtonClick() {
+                document.getElementById('playerNameInput').value = "admin";
+                document.getElementById('playerRoleInput').value = 'admin';
+                document.getElementById('roleBox').hidden = true;
+                document.getElementById('adminBox').hidden = false;
+                document.getElementById('playerBox').hidden = true;
+
+                connect();
+            }
+        </script>
+    </body>
+</html>
