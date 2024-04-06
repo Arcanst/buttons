@@ -19,4 +19,9 @@
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="6.0.28" />
     </ItemGroup>
 
+
+    <ItemGroup>
+      <None Include="wwwroot\index.html" />
+    </ItemGroup>
+
 </Project>

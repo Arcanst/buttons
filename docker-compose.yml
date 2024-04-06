@@ -1,11 +1,11 @@
 version: '3.4'
 
 services:
-  wesolemotylki:
+  buttons:
     image: buttons
     container_name: buttons
     ports:
-      - "127.0.0.1:8006:80"
+      - "127.0.0.1:8007:80"
       - "587"
     build:
       context: .

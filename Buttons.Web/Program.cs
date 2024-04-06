@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(b =>
     {
         b
-            .WithOrigins("http://127.0.0.1:8080")
+            .WithOrigins("http://127.0.0.1:8080", "http://zaglosys.pl", "http://www.zaglosys.pl")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -29,5 +29,7 @@ var app = builder.Build();
 app.UseRouting();
 app.UseCors();
 app.MapHub<GameHub>("/game");
+app.UseFileServer();
+// app.MapGet("/", () => "Hello World!");
 
 app.Run();
